@@ -1,13 +1,18 @@
 <?php
+// PHP Errors setup
+ini_set('display_errors', 0);
+ini_set('allow_url_fopen', 1);
+
 define('BOT_TOKEN', '8608938779:AAFJo5dBtwHBFgfezWoPVd9xi_LdjnFA9Wg');
 define('ADMIN_ID', '6130075298');
 define('BOT_NAME', 'Dara OSINT Bot');
-define('OWNER_USERNAME', '@DaraSearchBot');
-define('BUY_CREDITS_URL', 'https://t.me/@DaraSearchBot');
-define('SUPPORT_URL', 'https://t.me/@DaraSearchBot');
+define('BOT_USERNAME', 'DaraSearchBot');
+define('OWNER_USERNAME', 'fatsuen');
+define('BUY_CREDITS_URL', 'https://t.me/fatsuen');
+define('SUPPORT_URL', 'https://t.me/fatsuen');
 
 define('DEFAULT_DAILY_CREDITS', 5);
-define('RATE_LIMIT_SECONDS', 5);
+define('RATE_LIMIT_SECONDS', 3);
 define('DATA_FILE', __DIR__ . '/clone_users.json');
 define('KEYS_FILE', __DIR__ . '/clone_keys.json');
 define('STATS_FILE', __DIR__ . '/clone_stats.json');
@@ -15,7 +20,7 @@ define('ADMINS_FILE', __DIR__ . '/clone_admins.json');
 define('MAINTENANCE_FILE', __DIR__ . '/clone_maint.json');
 
 define('BOT_HEADER', "🔍 *" . BOT_NAME . "*\n━━━━━━━━━━━━━━━━━━━━━━━━━━━\n");
-define('BOT_FOOTER', "\n━━━━━━━━━━━━━━━━━━━━━━━━━━━\n💳 *Buy Credits:* [" . OWNER_USERNAME . "](" . BUY_CREDITS_URL . ")\n🆘 *Support:* [" . OWNER_USERNAME . "](" . SUPPORT_URL . ")");
+define('BOT_FOOTER', "\n━━━━━━━━━━━━━━━━━━━━━━━━━━━\n📢 *Owner:* @" . OWNER_USERNAME . "\n💳 *Buy Credits:* [" . OWNER_USERNAME . "](" . BUY_CREDITS_URL . ")\n🆘 *Support:* [" . OWNER_USERNAME . "](" . SUPPORT_URL . ")");
 
 function getApiEndpoint($module, $query) {
     $encodedQuery = urlencode($query);
@@ -23,21 +28,21 @@ function getApiEndpoint($module, $query) {
     switch (strtolower($module)) {
         case 'num':
         case 'number':
-            return ;https://shorturl.at/Sjg47
+            return "https://shorturl.at/Sjg47";
 
         case 'aadhaar':
         case 'aadhar':
-            return ;https://shorturl.at/Sjg47
+            return "https://shorturl.at/Sjg47";
 
         case 'family':
-            return ;https://shorturl.at/Sjg47
+            return "https://shorturl.at/Sjg47";
 
         case 'upload_db':
         case 'uploaddb':
-            return ;https://shorturl.at/Sjg47
+            return "https://shorturl.at/Sjg47";
 
         default:
-            return ;https://shorturl.at/Sjg47
+            return "https://shorturl.at/Sjg47";
     }
 }
 
@@ -127,12 +132,12 @@ if ($text === '📱 Number Info') {
 }
 if ($text === '🪪 Aadhaar Info') {
     setUserModule($chatId, 'aadhaar');
-    sendMessageJSON($chatId, "🪪 *Aadhaar Info Selected*\n\nPlease enter the 12-digit Aadhaar number to search:", null, 'Markdown');
+    sendMessageJSON($chatId, "🪪 *Aadhaar Info Selected*\n\nPlease enter the search query:", null, 'Markdown');
     exit;
 }
 if ($text === '👨‍👩‍👧‍👦 Family Info') {
     setUserModule($chatId, 'family');
-    sendMessageJSON($chatId, "👨‍👩‍👧‍👦 *Family Info Selected*\n\nPlease enter the 12-digit Aadhaar number for family info:", null, 'Markdown');
+    sendMessageJSON($chatId, "👨‍👩‍👧‍👦 *Family Info Selected*\n\nPlease enter the search query:", null, 'Markdown');
     exit;
 }
 if ($text === '📁 Upload DB') {
@@ -172,7 +177,7 @@ if ($text === '🛒 Buy Credits' || $text === '/buy') {
 if (strpos($text, '/start') === 0) {
     $welcomeMsg = BOT_HEADER .
                  "👋 *Welcome " . htmlspecialchars($firstName) . "!*\n\n" .
-                 "This bot provides Number Info, Aadhaar Info, Family Info, and DB Search.\n\n" .
+                 "This bot provides search services for various modules.\n\n" .
                  "📊 *Your Balance:* `{$user['credits']}` free credits available.\n\n" .
                  "👇 *Choose an option from the menu buttons below:*";
     sendMessageJSON($chatId, $welcomeMsg, mainKeyboard(), 'Markdown');
@@ -182,9 +187,9 @@ if (strpos($text, '/start') === 0) {
 if ($text === '/help') {
     $helpMsg = BOT_HEADER .
                "📖 *BOT COMMANDS & MODULES*\n\n" .
-               "• `/num <10-digit number>` — Number Info\n" .
-               "• `/aadhaar <12-digit number>` — Aadhaar Info\n" .
-               "• `/family <12-digit number>` — Family Info\n" .
+               "• `/num <query>` — Number Info\n" .
+               "• `/aadhaar <query>` — Aadhaar Info\n" .
+               "• `/family <query>` — Family Info\n" .
                "• `/uploaddb <query>` — Search Uploaded DB\n" .
                "• `/redeem <key>` — Redeem License Key\n" .
                "• `/myinfo` — Check Balance & Stats\n" .
@@ -415,10 +420,10 @@ function fetchUrl($url) {
     $ch = curl_init();
     curl_setopt($ch, CURLOPT_URL, $url);
     curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+    curl_setopt($ch, CURLOPT_FOLLOWLOCATION, true);
     curl_setopt($ch, CURLOPT_TIMEOUT, 15);
     curl_setopt($ch, CURLOPT_USERAGENT, 'Mozilla/5.0 (Windows NT 10.0; Win64; x64)');
     $res = curl_exec($ch);
-    $httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
     curl_close($ch);
 
     if (!$res) {
@@ -439,8 +444,7 @@ function formatLookupResponse($module, $query, $data) {
            "🎯 *QUERY:* `{$query}`\n\n";
 
     if (isset($data['error'])) {
-        $out .= "❌ *No API Found!*\n" .
-                "⚠️ " . htmlspecialchars($data['error']);
+        $out .= "❌ *Error:* " . htmlspecialchars($data['error']);
         return $out;
     }
 
@@ -489,30 +493,30 @@ function getUser($chatId) {
 function saveUser($chatId, $user) {
     $users = loadAllUsers();
     $users[$chatId] = $user;
-    file_put_contents(DATA_FILE, json_encode($users, JSON_PRETTY_PRINT), LOCK_EX);
+    @file_put_contents(DATA_FILE, json_encode($users, JSON_PRETTY_PRINT), LOCK_EX);
 }
 
 function loadAllUsers() {
     if (!file_exists(DATA_FILE)) return [];
-    return json_decode(file_get_contents(DATA_FILE), true) ?? [];
+    return json_decode(@file_get_contents(DATA_FILE), true) ?? [];
 }
 
 function loadKeys() {
     if (!file_exists(KEYS_FILE)) return [];
-    return json_decode(file_get_contents(KEYS_FILE), true) ?? [];
+    return json_decode(@file_get_contents(KEYS_FILE), true) ?? [];
 }
 
 function saveKeys($keys) {
-    file_put_contents(KEYS_FILE, json_encode($keys, JSON_PRETTY_PRINT), LOCK_EX);
+    @file_put_contents(KEYS_FILE, json_encode($keys, JSON_PRETTY_PRINT), LOCK_EX);
 }
 
 function loadStats() {
     if (!file_exists(STATS_FILE)) return ['total_lookups' => 0];
-    return json_decode(file_get_contents(STATS_FILE), true) ?? ['total_lookups' => 0];
+    return json_decode(@file_get_contents(STATS_FILE), true) ?? ['total_lookups' => 0];
 }
 
 function saveStats($stats) {
-    file_put_contents(STATS_FILE, json_encode($stats, JSON_PRETTY_PRINT), LOCK_EX);
+    @file_put_contents(STATS_FILE, json_encode($stats, JSON_PRETTY_PRINT), LOCK_EX);
 }
 
 function recordLookup() {
@@ -529,18 +533,18 @@ function recordNewUser() {
 
 function isInMaintenance() {
     if (!file_exists(MAINTENANCE_FILE)) return false;
-    $d = json_decode(file_get_contents(MAINTENANCE_FILE), true);
+    $d = json_decode(@file_get_contents(MAINTENANCE_FILE), true);
     return ($d['on'] ?? false) === true;
 }
 
 function setMaintenance($on) {
-    file_put_contents(MAINTENANCE_FILE, json_encode(['on' => $on], JSON_PRETTY_PRINT), LOCK_EX);
+    @file_put_contents(MAINTENANCE_FILE, json_encode(['on' => $on], JSON_PRETTY_PRINT), LOCK_EX);
 }
 
 function isAdmin($chatId) {
     if ((string)$chatId === (string)ADMIN_ID) return true;
     if (!file_exists(ADMINS_FILE)) return false;
-    $admins = json_decode(file_get_contents(ADMINS_FILE), true) ?? [];
+    $admins = json_decode(@file_get_contents(ADMINS_FILE), true) ?? [];
     return in_array((string)$chatId, $admins);
 }
 
