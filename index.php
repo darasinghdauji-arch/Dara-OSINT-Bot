@@ -1,10 +1,10 @@
 <?php
-define('BOT_TOKEN', '');
-define('ADMIN_ID', '');
-define('BOT_NAME', 'OSINT Search Bot');
-define('OWNER_USERNAME', 'YourUsername');
-define('BUY_CREDITS_URL', 'https://t.me/YourUsername');
-define('SUPPORT_URL', 'https://t.me/YourUsername');
+define('BOT_TOKEN', '8608938779:AAFJo5dBtwHBFgfezWoPVd9xi_LdjnFA9Wg');
+define('ADMIN_ID', '6130075298');
+define('BOT_NAME', 'Dara OSINT Bot');
+define('OWNER_USERNAME', '@DaraSearchBot');
+define('BUY_CREDITS_URL', 'https://t.me/@DaraSearchBot');
+define('SUPPORT_URL', 'https://t.me/@DaraSearchBot');
 
 define('DEFAULT_DAILY_CREDITS', 5);
 define('RATE_LIMIT_SECONDS', 5);
@@ -23,21 +23,21 @@ function getApiEndpoint($module, $query) {
     switch (strtolower($module)) {
         case 'num':
         case 'number':
-            return null;
+            return ;https://shorturl.at/Sjg47
 
         case 'aadhaar':
         case 'aadhar':
-            return null;
+            return ;https://shorturl.at/Sjg47
 
         case 'family':
-            return null;
+            return ;https://shorturl.at/Sjg47
 
         case 'upload_db':
         case 'uploaddb':
-            return null;
+            return ;https://shorturl.at/Sjg47
 
         default:
-            return null;
+            return ;https://shorturl.at/Sjg47
     }
 }
 
