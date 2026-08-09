@@ -11,6 +11,9 @@ define('OWNER_USERNAME', 'fatsuen');
 define('BUY_CREDITS_URL', 'https://t.me/fatsuen');
 define('SUPPORT_URL', 'https://t.me/fatsuen');
 
+// 🌐 यहाँ अपनी Direct JSON / API लिंक डालें
+define('DATA_URL', 'https://raw.githubusercontent.com/username/repository/main/data.json');
+
 define('DEFAULT_DAILY_CREDITS', 5);
 define('RATE_LIMIT_SECONDS', 3);
 define('DATA_FILE', __DIR__ . '/clone_users.json');
@@ -22,37 +25,76 @@ define('MAINTENANCE_FILE', __DIR__ . '/clone_maint.json');
 define('BOT_HEADER', "🔍 *" . BOT_NAME . "*\n━━━━━━━━━━━━━━━━━━━━━━━━━━━\n");
 define('BOT_FOOTER', "\n━━━━━━━━━━━━━━━━━━━━━━━━━━━\n📢 *Owner:* @" . OWNER_USERNAME . "\n💳 *Buy Credits:* [" . OWNER_USERNAME . "](" . BUY_CREDITS_URL . ")\n🆘 *Support:* [" . OWNER_USERNAME . "](" . SUPPORT_URL . ")");
 
-function getApiEndpoint($module, $query) {
-    $encodedQuery = urlencode($query);
+// -------------------------------------------------------------
+// 1. लिंक से लाइव डेटा खींचने और सर्च करने का फ़ंक्शन
+// -------------------------------------------------------------
+function searchFromLinkData($module, $query) {
+    $cleanQuery = trim($query);
 
-    switch (strtolower($module)) {
-        case 'num':
-        case 'number':
-            return "https://shorturl.at/Sjg47";
+    // 1. लिंक से डेटा फ़ैच करें
+    $ch = curl_init();
+    curl_setopt($ch, CURLOPT_URL, DATA_URL);
+    curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+    curl_setopt($ch, CURLOPT_FOLLOWLOCATION, true);
+    curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, false);
+    curl_setopt($ch, CURLOPT_TIMEOUT, 15);
+    $response = curl_exec($ch);
+    curl_close($ch);
 
-        case 'aadhaar':
-        case 'aadhar':
-            return "https://shorturl.at/Sjg47";
-
-        case 'family':
-            return "https://shorturl.at/Sjg47";
-
-        case 'upload_db':
-        case 'uploaddb':
-            return "https://shorturl.at/Sjg47";
-
-        default:
-            return "https://shorturl.at/Sjg47";
+    if (!$response) {
+        return [
+            "status"  => "error",
+            "message" => "Unable to connect to data link."
+        ];
     }
+
+    $database = json_decode($response, true);
+    if (!$database || !is_array($database)) {
+        return [
+            "status"  => "error",
+            "message" => "Data on link is not valid JSON."
+        ];
+    }
+
+    // 2. फ़ैच किए गए डेटा में खोजें
+    if (isset($database[$cleanQuery])) {
+        return [
+            "status"  => "success",
+            "module"  => strtoupper($module),
+            "query"   => $cleanQuery,
+            "details" => $database[$cleanQuery]
+        ];
+    }
+
+    // Array के अंदर सर्च करने के लिए
+    foreach ($database as $key => $val) {
+        if (is_array($val) && (in_array($cleanQuery, $val, true) || strpos(json_encode($val), $cleanQuery) !== false)) {
+            return [
+                "status"  => "success",
+                "module"  => strtoupper($module),
+                "query"   => $cleanQuery,
+                "details" => $val
+            ];
+        }
+    }
+
+    return [
+        "status"  => "not_found",
+        "module"  => strtoupper($module),
+        "query"   => $cleanQuery,
+        "message" => "No record found for: " . $cleanQuery
+    ];
 }
 
+// -------------------------------------------------------------
+// 2. Telegram Webhook Handler
+// -------------------------------------------------------------
 $update = json_decode(file_get_contents('php://input'), true);
 if (!$update) exit;
 
 if (isset($update['callback_query'])) {
     $callback = $update['callback_query'];
     $chatId   = (string)$callback['message']['chat']['id'];
-    $msgId    = $callback['message']['message_id'];
     $data     = $callback['data'];
 
     if (strpos($data, 'set_module|') === 0) {
@@ -74,7 +116,6 @@ if (isset($update['callback_query'])) {
         sendMessageJSON($chatId, "❌ Action cancelled. Choose an option from the menu below:", mainKeyboard(), 'Markdown');
         exit;
     }
-
     exit;
 }
 
@@ -125,9 +166,10 @@ if (isInMaintenance() && !isAdmin($chatId)) {
     exit;
 }
 
+// Menu Buttons
 if ($text === '📱 Number Info') {
     setUserModule($chatId, 'number');
-    sendMessageJSON($chatId, "📱 *Number Info Selected*\n\nPlease enter the 10-digit phone number to search:", null, 'Markdown');
+    sendMessageJSON($chatId, "📱 *Number Info Selected*\n\nPlease enter the phone number to search:", null, 'Markdown');
     exit;
 }
 if ($text === '🪪 Aadhaar Info') {
@@ -142,7 +184,7 @@ if ($text === '👨‍👩‍👧‍👦 Family Info') {
 }
 if ($text === '📁 Upload DB') {
     setUserModule($chatId, 'upload_db');
-    sendMessageJSON($chatId, "📁 *Upload DB Selected*\n\nPlease enter your DB search query or send your DB file:", null, 'Markdown');
+    sendMessageJSON($chatId, "📁 *Upload DB Selected*\n\nPlease enter your DB search query:", null, 'Markdown');
     exit;
 }
 if ($text === '👤 My Account' || $text === '/myinfo' || $text === '/profile') {
@@ -256,102 +298,13 @@ foreach ($cmdModules as $cmd => $modName) {
     }
 }
 
-if (isAdmin($chatId)) {
-    if (strpos($text, '/genkey') === 0) {
-        $parts = explode(' ', $text);
-        $amount = (int)($parts[1] ?? 10);
-        $count  = (int)($parts[2] ?? 1);
-
-        $generatedKeys = [];
-        $keys = loadKeys();
-        for ($i = 0; $i < $count; $i++) {
-            $newKey = strtoupper(substr(md5(uniqid(rand(), true)), 0, 12));
-            $keys[$newKey] = [
-                'credits' => $amount,
-                'is_vip' => false,
-                'used' => false,
-                'created_at' => date('Y-m-d H:i:s')
-            ];
-            $generatedKeys[] = "`{$newKey}` ({$amount} credits)";
-        }
-        saveKeys($keys);
-
-        $resp = "🔑 *Generated " . count($generatedKeys) . " Key(s):*\n\n" . implode("\n", $generatedKeys);
-        sendMessageJSON($chatId, $resp, null, 'Markdown');
-        exit;
-    }
-
-    if (strpos($text, '/addcredits') === 0) {
-        $parts = explode(' ', $text);
-        $targetUser = $parts[1] ?? '';
-        $addAmt = (int)($parts[2] ?? 0);
-
-        if (!$targetUser || $addAmt <= 0) {
-            sendMessageJSON($chatId, "⚠️ *Usage:* `/addcredits <user_id> <credits>`", null, 'Markdown');
-            exit;
-        }
-
-        $targetData = getUser($targetUser);
-        if (!$targetData) {
-            sendMessageJSON($chatId, "❌ User not found in database!", null, 'Markdown');
-            exit;
-        }
-
-        $targetData['credits'] = ($targetData['credits'] ?? 0) + $addAmt;
-        saveUser($targetUser, $targetData);
-        sendMessageJSON($chatId, "✅ Added +{$addAmt} credits to User `{$targetUser}`.", null, 'Markdown');
-        sendMessageJSON($targetUser, "🎉 Admin added +{$addAmt} credits to your account!", null, 'Markdown');
-        exit;
-    }
-
-    if (strpos($text, '/broadcast') === 0) {
-        $msgToSend = trim(substr($text, 10));
-        if (empty($msgToSend)) {
-            sendMessageJSON($chatId, "⚠️ *Usage:* `/broadcast Your message here`", null, 'Markdown');
-            exit;
-        }
-
-        $allUsers = loadAllUsers();
-        $sentCount = 0;
-        foreach ($allUsers as $uid => $uData) {
-            $res = sendMessageJSON($uid, "📢 *BROADCAST MESSAGE*\n\n" . $msgToSend, null, 'Markdown');
-            if ($res && ($res['ok'] ?? false)) $sentCount++;
-            usleep(50000);
-        }
-        sendMessageJSON($chatId, "✅ Broadcast completed! Sent to {$sentCount} users.", null, 'Markdown');
-        exit;
-    }
-
-    if ($text === '/stats') {
-        $allUsers = loadAllUsers();
-        $stats = loadStats();
-        $keys = loadKeys();
-
-        $totalUsers = count($allUsers);
-        $totalKeys = count($keys);
-        $totalLookups = $stats['total_lookups'] ?? 0;
-
-        $statMsg = "📊 *ADMIN STATISTICS*\n\n" .
-                   "👥 *Total Users:* {$totalUsers}\n" .
-                   "🔑 *Total Keys Generated:* {$totalKeys}\n" .
-                   "🔍 *Total Lookups Handled:* {$totalLookups}\n";
-        sendMessageJSON($chatId, $statMsg, null, 'Markdown');
-        exit;
-    }
-
-    if ($text === '/maintenance') {
-        $curr = isInMaintenance();
-        setMaintenance(!$curr);
-        $statusStr = !$curr ? "ENABLED (Bot is now locked)" : "DISABLED (Bot is open)";
-        sendMessageJSON($chatId, "⚙️ Maintenance mode: *{$statusStr}*", null, 'Markdown');
-        exit;
-    }
-}
-
 $currentModule = $user['module'] ?? 'number';
 processLookupRequest($chatId, $currentModule, $text, $user);
 exit;
 
+// -------------------------------------------------------------
+// 3. Request Processor
+// -------------------------------------------------------------
 function processLookupRequest($chatId, $module, $query, $user) {
     $lastReq = $user['last_request'] ?? 0;
     if (time() - $lastReq < RATE_LIMIT_SECONDS) {
@@ -371,23 +324,6 @@ function processLookupRequest($chatId, $module, $query, $user) {
         return;
     }
 
-    $apiUrl = getApiEndpoint($module, $query);
-
-    if (empty($apiUrl)) {
-        sendMessageJSON(
-            $chatId,
-            BOT_HEADER .
-            "📌 *MODULE:* `" . strtoupper($module) . "`\n" .
-            "🎯 *QUERY:* `{$query}`\n\n" .
-            "❌ *No API Found!*\n" .
-            "⚠️ The API endpoint for this module is not configured." .
-            BOT_FOOTER,
-            mainKeyboard(),
-            'Markdown'
-        );
-        return;
-    }
-
     if (!$isVip) {
         $user['credits']--;
     }
@@ -399,10 +335,10 @@ function processLookupRequest($chatId, $module, $query, $user) {
     $statusMsg = sendMessageJSON($chatId, "🔍 *Searching " . strtoupper($module) . " database for:* `{$query}`...", null, 'Markdown');
     $msgId = $statusMsg['result']['message_id'] ?? null;
 
-    $apiResponse = fetchUrl($apiUrl);
+    // लिंक से लाइव डेटा फ़ैच करके सर्च करें
+    $apiResponse = searchFromLinkData($module, $query);
 
     $formattedResult = formatLookupResponse($module, $query, $apiResponse);
-
     $finalText = BOT_HEADER . $formattedResult . BOT_FOOTER;
 
     if ($msgId) {
@@ -412,47 +348,12 @@ function processLookupRequest($chatId, $module, $query, $user) {
     }
 }
 
-function fetchUrl($url) {
-    if (!$url) {
-        return ["error" => "No API URL configured."];
-    }
-
-    $ch = curl_init();
-    curl_setopt($ch, CURLOPT_URL, $url);
-    curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
-    curl_setopt($ch, CURLOPT_FOLLOWLOCATION, true);
-    curl_setopt($ch, CURLOPT_TIMEOUT, 15);
-    curl_setopt($ch, CURLOPT_USERAGENT, 'Mozilla/5.0 (Windows NT 10.0; Win64; x64)');
-    $res = curl_exec($ch);
-    curl_close($ch);
-
-    if (!$res) {
-        return ["error" => "API Request failed or timed out."];
-    }
-
-    $json = json_decode($res, true);
-    if ($json !== null) {
-        return $json;
-    }
-
-    return ["raw" => substr($res, 0, 3000)];
-}
-
 function formatLookupResponse($module, $query, $data) {
     $modName = strtoupper($module);
     $out = "📌 *MODULE:* `{$modName}`\n" .
            "🎯 *QUERY:* `{$query}`\n\n";
 
-    if (isset($data['error'])) {
-        $out .= "❌ *Error:* " . htmlspecialchars($data['error']);
-        return $out;
-    }
-
     $jsonStr = json_encode($data, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE);
-    if (strlen($jsonStr) > 3500) {
-        $jsonStr = substr($jsonStr, 0, 3500) . "\n... [Truncated]";
-    }
-
     $out .= "```json\n" . $jsonStr . "\n```";
     return $out;
 }
@@ -535,10 +436,6 @@ function isInMaintenance() {
     if (!file_exists(MAINTENANCE_FILE)) return false;
     $d = json_decode(@file_get_contents(MAINTENANCE_FILE), true);
     return ($d['on'] ?? false) === true;
-}
-
-function setMaintenance($on) {
-    @file_put_contents(MAINTENANCE_FILE, json_encode(['on' => $on], JSON_PRETTY_PRINT), LOCK_EX);
 }
 
 function isAdmin($chatId) {
