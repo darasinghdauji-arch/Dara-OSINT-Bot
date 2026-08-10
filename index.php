@@ -11,7 +11,7 @@ define('OWNER_USERNAME', 'fatsuen');
 define('BUY_CREDITS_URL', 'https://t.me/fatsuen');
 define('SUPPORT_URL', 'https://t.me/fatsuen');
 
-// 🌐 यहाँ अपनी Direct JSON / API लिंक डालें
+// 🌐xnx.com
 define('DATA_URL', 'https://raw.githubusercontent.com/username/repository/main/data.json');
 
 define('DEFAULT_DAILY_CREDITS', 5);
