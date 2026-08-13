@@ -18,7 +18,7 @@ define('DEFAULT_DAILY_CREDITS', 5);
 define('RATE_LIMIT_SECONDS', 3);
 define('DATA_FILE', __DIR__ . '/clone_users.json');
 define('KEYS_FILE', __DIR__ . '/clone_keys.json');
-define('STATS_FILE', __DIR__ . '/clone_stats.json');
+define('STATS_FILफ़ंक्शनIR__ . '/clone_stats.json');
 define('ADMINS_FILE', __DIR__ . '/clone_admins.json');
 define('MAINTENANCE_FILE', __DIR__ . '/clone_maint.json');
 
@@ -26,8 +26,7 @@ define('BOT_HEADER', "🔍 *" . BOT_NAME . "*\n━━━━━━━━━━━
 define('BOT_FOOTER', "\n━━━━━━━━━━━━━━━━━━━━━━━━━━━\n📢 *Owner:* @" . OWNER_USERNAME . "\n💳 *Buy Credits:* [" . OWNER_USERNAME . "](" . BUY_CREDITS_URL . ")\n🆘 *Support:* [" . OWNER_USERNAME . "](" . SUPPORT_URL . ")");
 
 // -------------------------------------------------------------
-// 1. लिंक से लाइव डेटा खींचने और सर्च करने का फ़ंक्शन
-// -------------------------------------------------------------
+// 1. लिंक से लाइव डेटा खींचने और सर्च करने का link// -------------------------------------------------------------
 function searchFromLinkData($module, $query) {
     $cleanQuery = trim($query);
 
@@ -44,7 +43,7 @@ function searchFromLinkData($module, $query) {
     if (!$response) {
         return [
             "status"  => "error",
-            "message" => "Unable to connect to data link."
+            "message" => "contact admin dara singh dau."
         ];
     }
 
